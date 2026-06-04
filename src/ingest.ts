@@ -94,23 +94,26 @@ async function ingestPlatform(platform: 'ios' | 'android'): Promise<void> {
     }
 
     console.log(`  ingest: ${slug} (${toEmbed.length} new/changed chunks)`);
-    for (const source of toDelete) deleteChunksBySource(db, source);
 
+    // Embed first — if this throws, DB is untouched
     const embeddings = await embed(toEmbed.map((t) => t.section));
 
-    for (let j = 0; j < toEmbed.length; j++) {
-      const { section, hash, idx } = toEmbed[j];
-      const source = `${platform}/${slug}#${idx}`;
-      const chunk: ChunkInput = {
-        source,
-        platform,
-        app_id: null,
-        content: section,
-        content_hash: hash,
-        metadata: { url, slug, chunk_i: idx },
-      };
-      insertChunk(db, chunk, embeddings[j]);
-    }
+    db.transaction(() => {
+      for (const source of toDelete) deleteChunksBySource(db, source);
+      for (let j = 0; j < toEmbed.length; j++) {
+        const { section, hash, idx } = toEmbed[j];
+        const source = `${platform}/${slug}#${idx}`;
+        const chunk: ChunkInput = {
+          source,
+          platform,
+          app_id: null,
+          content: section,
+          content_hash: hash,
+          metadata: { url, slug, chunk_i: idx },
+        };
+        insertChunk(db, chunk, embeddings[j]);
+      }
+    })();
   }
 
   const total = (db.prepare('SELECT COUNT(*) as n FROM chunks').get() as { n: number }).n;
@@ -148,23 +151,26 @@ async function ingestCustom(filePath: string, appId: string): Promise<void> {
   }
 
   console.log(`  ingest: ${slug} app=${appId} (${toEmbed.length} new/changed chunks)`);
-  for (const source of toDelete) deleteChunksBySource(db, source);
 
+  // Embed first — if this throws, DB is untouched
   const embeddings = await embed(toEmbed.map((t) => t.section));
 
-  for (let j = 0; j < toEmbed.length; j++) {
-    const { section, hash, idx } = toEmbed[j];
-    const source = `custom/${appId}/${slug}#${idx}`;
-    const chunk: ChunkInput = {
-      source,
-      platform: 'custom',
-      app_id: appId,
-      content: section,
-      content_hash: hash,
-      metadata: { file: filePath, slug, chunk_i: idx },
-    };
-    insertChunk(db, chunk, embeddings[j]);
-  }
+  db.transaction(() => {
+    for (const source of toDelete) deleteChunksBySource(db, source);
+    for (let j = 0; j < toEmbed.length; j++) {
+      const { section, hash, idx } = toEmbed[j];
+      const source = `custom/${appId}/${slug}#${idx}`;
+      const chunk: ChunkInput = {
+        source,
+        platform: 'custom',
+        app_id: appId,
+        content: section,
+        content_hash: hash,
+        metadata: { file: filePath, slug, chunk_i: idx },
+      };
+      insertChunk(db, chunk, embeddings[j]);
+    }
+  })();
 
   const total = (db.prepare('SELECT COUNT(*) as n FROM chunks').get() as { n: number }).n;
   console.log(`\nDone. Total chunks in DB: ${total}`);
