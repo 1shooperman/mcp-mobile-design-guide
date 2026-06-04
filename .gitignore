@@ -1,1 +1,8 @@
 .DS_Store
+.env*
+.cache/
+.venv/
+node_modules/
+dist/
+*.js.map
+data/*.db
