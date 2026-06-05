@@ -1,1 +1,23 @@
+# macOS
 .DS_Store
+
+# env
+.env*
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+
+# Node
+node_modules/
+dist/
+*.js.map
+
+# Data
+.cache/
+data/*.db
+
+# Generated
+change-summary.md

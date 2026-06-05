@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "mobile-design-guide": {
+      "type": "stdio",
+      "command": "/bin/sh",
+      "args": ["${CLAUDE_PROJECT_DIR:-.}/run-mcp.sh"]
+    }
+  }
+}
