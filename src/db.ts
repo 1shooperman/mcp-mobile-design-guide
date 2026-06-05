@@ -106,7 +106,9 @@ export function insertChunk(
 }
 
 export function getChunksBySource(db: Database.Database, source: string): Chunk[] {
-  return db.prepare('SELECT * FROM chunks WHERE source = ?').all(source) as Chunk[];
+  return db
+    .prepare('SELECT * FROM chunks WHERE source = ? OR source LIKE ? ORDER BY source')
+    .all(source, `${source}#%`) as Chunk[];
 }
 
 export function listSources(
