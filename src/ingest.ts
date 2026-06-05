@@ -11,9 +11,9 @@ import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 import { parseArgs } from 'util';
-import { openDb, insertChunk, chunkExists, deleteChunksBySource, ChunkInput } from './db.js';
-import { embed } from './embed.js';
-import { config } from './config.js';
+import { openDb, insertChunk, chunkExists, deleteChunksBySource, ChunkInput } from './db';
+import { embed } from './embed';
+import { config } from './config';
 
 const CHUNK_SIZE = 1800;
 const CHUNK_OVERLAP = 200;

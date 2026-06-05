@@ -1,7 +1,6 @@
 import path from 'path';
-import { fileURLToPath } from 'url';
 
-const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const ROOT = path.resolve(__dirname, '..');
 
 export const config = {
   dbPath: process.env.DB_PATH ?? path.join(ROOT, 'data', 'guidelines.db'),

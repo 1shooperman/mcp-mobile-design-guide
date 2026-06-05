@@ -1,0 +1,8 @@
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.pylint.main]
+ignore-paths = [".venv", "node_modules"]
+
+[tool.pylint.messages_control]
+disable = ["missing-module-docstring", "missing-function-docstring", "broad-exception-caught", "duplicate-code"]

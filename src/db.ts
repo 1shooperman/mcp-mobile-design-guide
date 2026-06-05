@@ -1,6 +1,6 @@
 import Database from 'better-sqlite3';
 import * as sqliteVec from 'sqlite-vec';
-import { config } from './config.js';
+import { config } from './config';
 
 export const EMBED_DIM = 1024;
 

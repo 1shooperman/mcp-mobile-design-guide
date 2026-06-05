@@ -1,5 +1,5 @@
 import { VoyageAIClient } from 'voyageai';
-import { config } from './config.js';
+import { config } from './config';
 
 const BATCH_SIZE = 8;
 const RPM_DELAY_MS = 21_000;
