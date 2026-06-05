@@ -10,6 +10,7 @@
     "ingest": "tsx src/ingest.ts",
     "test": "NODE_OPTIONS='--experimental-vm-modules' npx jest",
     "lint": "eslint",
+    "validate": "tsc --noEmit",
     "format": "prettier --write \"src/**/*.ts\" \"__tests__/**/*.ts\""
   },
   "repository": {
