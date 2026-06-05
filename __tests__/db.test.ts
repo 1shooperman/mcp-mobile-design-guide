@@ -1,5 +1,5 @@
-import crypto from 'crypto';
-import { openDb, insertChunk, chunkExists, deleteChunksBySource, getChunksBySource, listSources } from '../src/db';
+import crypto from 'node:crypto';
+import { chunkExists, deleteChunksBySource, getChunksBySource, insertChunk, listSources, openDb } from '../src/db';
 import { FIXTURE_CHUNKS } from './fixtures/chunks';
 
 function fakeEmbedding(dim = 1024): number[] {

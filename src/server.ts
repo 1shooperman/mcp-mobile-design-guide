@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import { FastMCP } from 'fastmcp';
 import { z } from 'zod';
-import { openDb, listSources, getChunksBySource, searchNearest } from './db';
+import { getChunksBySource, listSources, openDb, searchNearest } from './db';
 import { embedQuery } from './embed';
 
 const mcp = new FastMCP({ name: 'mobile-design-guide', version: '1.0.0' });

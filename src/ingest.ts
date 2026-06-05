@@ -7,13 +7,13 @@
  */
 
 import 'dotenv/config';
-import fs from 'fs';
-import path from 'path';
-import crypto from 'crypto';
-import { parseArgs } from 'util';
-import { openDb, insertChunk, chunkExists, deleteChunksBySource, ChunkInput } from './db';
-import { embed } from './embed';
+import crypto from 'node:crypto';
+import fs from 'node:fs';
+import path from 'node:path';
+import { parseArgs } from 'node:util';
 import { config } from './config';
+import { type ChunkInput, chunkExists, deleteChunksBySource, insertChunk, openDb } from './db';
+import { embed } from './embed';
 
 const CHUNK_SIZE = 1800;
 const CHUNK_OVERLAP = 200;

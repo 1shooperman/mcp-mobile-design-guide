@@ -125,7 +125,7 @@ export function listSources(
     conditions.push('app_id = ?');
     params.push(appId);
   }
-  if (conditions.length) sql += ' WHERE ' + conditions.join(' AND ');
+  if (conditions.length) sql += ` WHERE ${conditions.join(' AND ')}`;
   sql += ' ORDER BY source';
   return (db.prepare(sql).all(...params) as { source: string }[]).map((r) => r.source);
 }

@@ -5,4 +5,4 @@ testpaths = ["tests"]
 ignore-paths = [".venv", "node_modules"]
 
 [tool.pylint.messages_control]
-disable = ["missing-module-docstring", "missing-function-docstring", "broad-exception-caught", "duplicate-code"]
+disable = ["missing-module-docstring", "missing-function-docstring", "broad-exception-caught", "duplicate-code", "import-error"]

@@ -50,7 +50,7 @@ describe('chunking', () => {
   });
 
   test('splitByHeaders sub-splits oversized sections', () => {
-    const bigSection = '## Big Section\n' + 'word '.repeat(2000);
+    const bigSection = `## Big Section\n${'word '.repeat(2000)}`;
     const chunks = splitByHeaders(bigSection);
     expect(chunks.length).toBeGreaterThan(1);
     for (const c of chunks) {
@@ -59,7 +59,7 @@ describe('chunking', () => {
   });
 
   test('splitByHeaders drops sections under 100 chars', () => {
-    const md = '## Short\nToo short.\n\n## Long\n' + 'Enough content here. '.repeat(6);
+    const md = `## Short\nToo short.\n\n## Long\n${'Enough content here. '.repeat(6)}`;
     const chunks = splitByHeaders(md);
     expect(chunks.every((c) => c.length >= 100)).toBe(true);
   });
