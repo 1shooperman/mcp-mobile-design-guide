@@ -6,3 +6,5 @@ node_modules/
 dist/
 *.js.map
 data/*.db
+
+change-summary.md
