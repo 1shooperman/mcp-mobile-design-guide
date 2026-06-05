@@ -48,16 +48,13 @@ Project-level (`.mcp.json` in this repo — no key needed if `.env` is present):
 
 ```bash
 # from the repo root
-claude mcp add --scope project --transport stdio mobile-design-guide \
-  -- /bin/sh ./run-mcp.sh
+claude mcp add mobile-design-guide -s project -- /bin/sh ./run-mcp.sh
 ```
 
 User-level (persists across all projects, pass key explicitly):
 
 ```bash
-claude mcp add --scope user --transport stdio \
-  --env VOYAGE_API_KEY=<your-key> \
-  mobile-design-guide \
+claude mcp add mobile-design-guide -s user -e VOYAGE_API_KEY=<your-key> \
   -- /bin/sh /path/to/mcp-mobile-design-guide/run-mcp.sh
 ```
 
