@@ -21,3 +21,7 @@ data/*.db
 
 # Generated
 change-summary.md
+
+
+wiki/**
+!.gitkeep
