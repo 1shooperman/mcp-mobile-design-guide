@@ -37,6 +37,19 @@ def is_target_url(url: str) -> bool:
     return p.netloc == BASE_DOMAIN and p.path.startswith(BASE_PATH)
 
 
+BLOCK_MARKERS = (
+    "www.google.com/sorry",
+    "unusual traffic",
+    "비정상적인 트래픽",
+    "detected unusual traffic",
+)
+
+
+def is_blocked_page(markdown: str) -> bool:
+    lower = markdown.lower()
+    return any(marker.lower() in lower for marker in BLOCK_MARKERS)
+
+
 async def crawl():
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     visited: set[str] = set()
@@ -64,13 +77,19 @@ async def crawl():
                 print(f"  FAILED: {result.error_message}")
                 continue
 
-            out_path.write_text(result.markdown or "", encoding="utf-8")
+            markdown = result.markdown or ""
+            if is_blocked_page(markdown):
+                print("  BLOCKED: got a bot-check page instead of content, skipping")
+                continue
+
+            out_path.write_text(markdown, encoding="utf-8")
             index[slug] = url
-            print(f"  -> {out_path} ({len(result.markdown or '')} chars)")
+            print(f"  -> {out_path} ({len(markdown)} chars)")
 
             for link in result.links.get("internal", []):
                 href = link.get("href", "")
                 full = urljoin(url, href).split("#")[0].rstrip("/")
+                full = full.split("?")[0]
                 if is_target_url(full) and full not in visited:
                     queue.append(full)
 
