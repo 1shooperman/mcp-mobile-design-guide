@@ -1,6 +1,6 @@
 {
   "name": "mcp-mobile-design-guide",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "main": "dist/server.js",
   "scripts": {
     "build": "tsc",
@@ -9,7 +9,8 @@
     "ingest": "tsx src/ingest.ts",
     "test": "jest",
     "lint": "biome check",
-    "validate": "tsc --noEmit"
+    "validate": "tsc --noEmit",
+    "verify:dev": "npm run lint && npm run validate && npm run test -- --no-watchman"
   },
   "repository": {
     "type": "git",
@@ -53,5 +54,23 @@
     "ts-jest": "^29.4.11",
     "tsx": "^4.22.4",
     "typescript": "^6.0.3"
+  },
+    "engines": {
+    "node": ">=24"
+  },
+  "overrides": {
+    "glob": "^13",
+    "rimraf": "^4",
+    "uuid": "^14",
+    "react-native-windows": "1.0.0"
+  },
+  "packageManager": "npm@11.17.0",
+  "allowScripts": {
+    "better-sqlite3@12.11.1": true,
+    "esbuild@0.28.2": true,
+    "fsevents@2.3.3": true,
+    "unrs-resolver@1.12.2": true,
+    "@parcel/watcher@2.6.0": true,
+    "tldjs@2.3.2": true
   }
 }
