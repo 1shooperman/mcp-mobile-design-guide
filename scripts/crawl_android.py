@@ -79,7 +79,7 @@ async def crawl():
 
             markdown = result.markdown or ""
             if is_blocked_page(markdown):
-                print(f"  BLOCKED: got a bot-check page instead of content, skipping")
+                print("  BLOCKED: got a bot-check page instead of content, skipping")
                 continue
 
             out_path.write_text(markdown, encoding="utf-8")
