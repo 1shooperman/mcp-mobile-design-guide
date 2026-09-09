@@ -10,11 +10,11 @@ const db = openDb();
 mcp.addTool({
   name: 'search_guidelines',
   description:
-    'Semantic search over iOS, Android, and custom app design guidelines. Returns relevant chunks with source and metadata.',
+    'Semantic search over iOS, Android, Google Search, and custom app design guidelines. Returns relevant chunks with source and metadata.',
   parameters: z.object({
     query: z.string().describe('Natural language search query'),
     platform: z
-      .enum(['ios', 'android', 'custom'])
+      .enum(['ios', 'android', 'google-search', 'custom'])
       .optional()
       .describe('Filter by platform'),
     app_id: z.string().optional().describe('Filter by app name (custom platform only)'),
@@ -40,7 +40,7 @@ mcp.addTool({
   description: 'List available design guideline topics (source slugs) in the database.',
   parameters: z.object({
     platform: z
-      .enum(['ios', 'android', 'custom'])
+      .enum(['ios', 'android', 'google-search', 'custom'])
       .optional()
       .describe('Filter by platform'),
     app_id: z.string().optional().describe('Filter by app name'),

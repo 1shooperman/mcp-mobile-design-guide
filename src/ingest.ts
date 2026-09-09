@@ -3,6 +3,7 @@
  * Usage:
  *   npm run ingest -- --platform ios
  *   npm run ingest -- --platform android
+ *   npm run ingest -- --platform google-search
  *   npm run ingest -- --custom ./path/to/guide.md --app-id my-app
  *   npm run ingest -- --platform ios --force   # re-embed everything, ignoring hashes
  */
@@ -171,8 +172,14 @@ async function embedAndStore(
   return toEmbed.length;
 }
 
-async function ingestPlatform(platform: 'ios' | 'android'): Promise<void> {
-  const dir = path.join(config.cacheDir, platform === 'ios' ? 'apple' : 'android', 'hig');
+const PLATFORM_DIRS: Record<string, string> = {
+  ios: 'apple',
+  android: 'android',
+  'google-search': 'google-search',
+};
+
+async function ingestPlatform(platform: string): Promise<void> {
+  const dir = path.join(config.cacheDir, PLATFORM_DIRS[platform], 'hig');
   const indexPath = path.join(dir, 'index.json');
 
   if (!fs.existsSync(indexPath)) {
@@ -283,8 +290,8 @@ async function main(): Promise<void> {
 
   if (values.platform) {
     const p = values.platform as string;
-    if (p !== 'ios' && p !== 'android') {
-      console.error('--platform must be ios or android');
+    if (!(p in PLATFORM_DIRS)) {
+      console.error(`--platform must be one of: ${Object.keys(PLATFORM_DIRS).join(', ')}`);
       process.exit(1);
     }
     await ingestPlatform(p);
@@ -296,7 +303,7 @@ async function main(): Promise<void> {
     }
     await ingestCustom(values.custom, appId);
   } else {
-    console.error('Usage: --platform ios|android  OR  --custom <path> --app-id <name>  [--force]');
+    console.error(`Usage: --platform ${Object.keys(PLATFORM_DIRS).join('|')}  OR  --custom <path> --app-id <name>  [--force]`);
     process.exit(1);
   }
 }

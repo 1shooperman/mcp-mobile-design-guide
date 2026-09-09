@@ -8,14 +8,15 @@ MCP server (stdio, Claude Code registered) backed by a sqlite-vec vector databas
 |---|---|---|
 | Apple HIG | crawled markdown | `platform=ios` |
 | Android Design | crawled markdown | `platform=android` |
+| Google Search Central (curated pages) | crawled markdown | `platform=google-search` |
 | Per-app style guide | ingested via script | `platform=custom`, `app_id=<name>` |
 
-Crawled pages are cached as markdown under `.cache/{apple,android}/hig/` with an `index.json` slug→url map. Bespoke guides are drop-in markdown files ingested on demand.
+Crawled pages are cached as markdown under `.cache/{apple,android,google-search}/hig/` with an `index.json` slug→url map. `google-search` isn't a full site crawl — `scripts/crawl_google_search.py` fetches a hand-picked `SOURCES` list (add URLs there to track more). Bespoke guides are drop-in markdown files ingested on demand.
 
 ## MCP Tools
 
 ```ts
-search_guidelines(query: string, platform?: "ios" | "android" | "custom", app_id?: string, top_k?: number): string
+search_guidelines(query: string, platform?: "ios" | "android" | "google-search" | "custom", app_id?: string, top_k?: number): string
 list_topics(platform?: string, app_id?: string): string
 get_guideline(slug: string): string
 ```
@@ -70,13 +71,14 @@ Voyage rate-limit backoff: same pattern as reference (batch size 8, RPM delay, e
 
 ```
 scripts/
-  crawl_apple.py      # already written, caches to .cache/apple/hig/
-  crawl_android.py    # already written, caches to .cache/android/hig/
-  ingest.ts           # ingest cached markdown + bespoke guides into DB
+  crawl_apple.py         # already written, caches to .cache/apple/hig/
+  crawl_android.py       # already written, caches to .cache/android/hig/
+  crawl_google_search.py # curated page list, caches to .cache/google-search/hig/
+  ingest.ts              # ingest cached markdown + bespoke guides into DB
 ```
 
 `ingest.ts` flags:
-- `--platform ios|android` — ingest from cache
+- `--platform ios|android|google-search` — ingest from cache
 - `--custom <path> --app-id <name>` — ingest a bespoke markdown file
 
 ## Project Layout
