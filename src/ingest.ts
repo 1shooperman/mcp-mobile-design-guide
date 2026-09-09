@@ -4,19 +4,34 @@
  *   npm run ingest -- --platform ios
  *   npm run ingest -- --platform android
  *   npm run ingest -- --custom ./path/to/guide.md --app-id my-app
+ *   npm run ingest -- --platform ios --force   # re-embed everything, ignoring hashes
  */
 
 import 'dotenv/config';
+import { execFileSync } from 'node:child_process';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
 import { config } from './config';
-import { type ChunkInput, chunkExists, deleteChunksBySource, insertChunk, openDb } from './db';
+import {
+  type ChunkInput,
+  chunkExists,
+  deleteChunksBySource,
+  getOldestSource,
+  insertChunk,
+  isSourceCurrent,
+  openDb,
+  recordSource,
+  type SourceProvenance,
+} from './db';
 import { embed } from './embed';
 
 const CHUNK_SIZE = 1800;
 const CHUNK_OVERLAP = 200;
+
+// Set by --force: skip the whole-file and per-chunk unchanged checks.
+let FORCE = false;
 
 function sha256(text: string): string {
   return crypto.createHash('sha256').update(text).digest('hex');
@@ -49,8 +64,111 @@ function splitByHeaders(markdown: string): string[] {
   return out;
 }
 
+/** The "## Heading" a chunk starts with, if any (chunks split right before headers). */
+function chunkSection(chunk: string): string | undefined {
+  const firstLine = chunk.split('\n')[0].trim();
+  return firstLine.startsWith('## ') ? firstLine.slice(3).trim() : undefined;
+}
+
+/**
+ * Parse a leading '---\n key: value ... \n---' block. Flat keys only; `tags`
+ * is treated as a comma-separated list. Returns ({}, text) if absent. Lets a
+ * custom guide self-declare metadata — most usefully `as_of` and `tags` —
+ * rather than relying only on file mtime.
+ */
+function parseFrontmatter(text: string): [Record<string, string | string[]>, string] {
+  if (!text.startsWith('---\n')) return [{}, text];
+  const end = text.indexOf('\n---', 4);
+  if (end === -1) return [{}, text];
+
+  const raw = text.slice(4, end);
+  const body = text.slice(end + 4).replace(/^\n+/, '');
+  const meta: Record<string, string | string[]> = {};
+  for (const line of raw.split('\n')) {
+    const sepIdx = line.indexOf(':');
+    if (sepIdx === -1) continue;
+    const key = line.slice(0, sepIdx).trim();
+    const val = line.slice(sepIdx + 1).trim();
+    meta[key] = key === 'tags' ? val.split(',').map((t) => t.trim()).filter(Boolean) : val;
+  }
+  return [meta, body];
+}
+
+let commitShaCache: string | null | undefined;
+
+/** Short sha of the repo the corpus was ingested from, or undefined. Resolved once. */
+function repoCommitSha(): string | undefined {
+  if (commitShaCache === undefined) {
+    try {
+      commitShaCache = execFileSync('git', ['-C', path.resolve(__dirname, '..'), 'rev-parse', '--short', 'HEAD'], {
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'ignore'],
+      }).trim();
+    } catch {
+      commitShaCache = null;
+    }
+  }
+  return commitShaCache ?? undefined;
+}
+
+function defaultAsOf(mtimeMs: number): string {
+  return new Date(mtimeMs).toISOString().slice(0, 10);
+}
+
+/**
+ * Freshness metadata stamped onto every chunk and the file's `sources` row.
+ * A retrieved chunk should carry its own age — `as_of` comes from a declared
+ * frontmatter value when present, else the file's mtime.
+ */
+function provenance(mtimeMs: number, frontmatter: Record<string, string | string[]>): SourceProvenance {
+  const declared = frontmatter.as_of;
+  const asOf = typeof declared === 'string' && declared ? declared : defaultAsOf(mtimeMs);
+  const prov: SourceProvenance = {
+    as_of: asOf,
+    as_of_source: typeof declared === 'string' && declared ? 'declared' : 'file-mtime',
+    ingested_at: new Date().toISOString(),
+  };
+  const sha = repoCommitSha();
+  if (sha) prov.commit_sha = sha;
+  return prov;
+}
+
 interface IndexJson {
   [slug: string]: string;
+}
+
+async function embedAndStore(
+  db: ReturnType<typeof openDb>,
+  docSource: string,
+  sections: string[],
+  buildChunk: (section: string, idx: number, hash: string) => ChunkInput,
+): Promise<number> {
+  const toEmbed: { section: string; hash: string; idx: number }[] = [];
+  const toDelete = new Set<string>();
+
+  for (let i = 0; i < sections.length; i++) {
+    const hash = sha256(sections[i]);
+    const chunkSource = `${docSource}#${i}`;
+    if (FORCE || !chunkExists(db, chunkSource, hash)) {
+      toDelete.add(chunkSource);
+      toEmbed.push({ section: sections[i], hash, idx: i });
+    }
+  }
+
+  if (toEmbed.length === 0) return 0;
+
+  // Embed first — if this throws, DB is untouched
+  const embeddings = await embed(toEmbed.map((t) => t.section));
+
+  db.transaction(() => {
+    for (const chunkSource of toDelete) deleteChunksBySource(db, chunkSource);
+    for (let j = 0; j < toEmbed.length; j++) {
+      const { section, hash, idx } = toEmbed[j];
+      insertChunk(db, buildChunk(section, idx, hash), embeddings[j]);
+    }
+  })();
+
+  return toEmbed.length;
 }
 
 async function ingestPlatform(platform: 'ios' | 'android'): Promise<void> {
@@ -72,52 +190,36 @@ async function ingestPlatform(platform: 'ios' | 'android'): Promise<void> {
       continue;
     }
 
+    const docSource = `${platform}/${slug}`;
     const markdown = fs.readFileSync(mdPath, 'utf8');
-    const sections = splitByHeaders(markdown);
+    const fileHash = sha256(markdown);
 
-    // determine which chunks are new/changed vs unchanged
-    const toEmbed: { section: string; hash: string; idx: number }[] = [];
-    const toDelete: string[] = [];
-
-    for (let i = 0; i < sections.length; i++) {
-      const hash = sha256(sections[i]);
-      const source = `${platform}/${slug}#${i}`;
-      if (!chunkExists(db, source, hash)) {
-        toDelete.push(source);
-        toEmbed.push({ section: sections[i], hash, idx: i });
-      }
-    }
-
-    if (toEmbed.length === 0) {
+    if (!FORCE && isSourceCurrent(db, docSource, fileHash)) {
       console.log(`  skip (unchanged): ${slug}`);
       continue;
     }
 
-    console.log(`  ingest: ${slug} (${toEmbed.length} new/changed chunks)`);
+    const [frontmatter, body] = parseFrontmatter(markdown);
+    const prov = provenance(fs.statSync(mdPath).mtimeMs, frontmatter);
+    const sections = splitByHeaders(body);
 
-    // Embed first — if this throws, DB is untouched
-    const embeddings = await embed(toEmbed.map((t) => t.section));
+    const changed = await embedAndStore(db, docSource, sections, (section, idx, hash) => ({
+      source: `${docSource}#${idx}`,
+      platform,
+      app_id: null,
+      content: section,
+      content_hash: hash,
+      metadata: { url, slug, chunk_i: idx, section: chunkSection(section), ...frontmatter, ...prov },
+    }));
 
-    db.transaction(() => {
-      for (const source of toDelete) deleteChunksBySource(db, source);
-      for (let j = 0; j < toEmbed.length; j++) {
-        const { section, hash, idx } = toEmbed[j];
-        const source = `${platform}/${slug}#${idx}`;
-        const chunk: ChunkInput = {
-          source,
-          platform,
-          app_id: null,
-          content: section,
-          content_hash: hash,
-          metadata: { url, slug, chunk_i: idx },
-        };
-        insertChunk(db, chunk, embeddings[j]);
-      }
-    })();
+    console.log(changed > 0 ? `  ingest: ${slug} (${changed} new/changed chunks)` : `  unchanged content, refreshing provenance: ${slug}`);
+    recordSource(db, docSource, fileHash, prov);
   }
 
   const total = (db.prepare('SELECT COUNT(*) as n FROM chunks').get() as { n: number }).n;
   console.log(`\nDone. Total chunks in DB: ${total}`);
+  const oldest = getOldestSource(db);
+  if (oldest) console.log(`Oldest source: ${oldest.source} (as_of ${oldest.as_of})`);
   db.close();
 }
 
@@ -127,53 +229,42 @@ async function ingestCustom(filePath: string, appId: string): Promise<void> {
     process.exit(1);
   }
 
-  const markdown = fs.readFileSync(filePath, 'utf8');
-  const sections = splitByHeaders(markdown);
+  const slug = path.basename(filePath, path.extname(filePath));
+  const docSource = `custom/${appId}/${slug}`;
+  const raw = fs.readFileSync(filePath, 'utf8');
+  const fileHash = sha256(raw);
   const db = openDb();
 
-  const toEmbed: { section: string; hash: string; idx: number }[] = [];
-  const toDelete: string[] = [];
-  const slug = path.basename(filePath, path.extname(filePath));
-
-  for (let i = 0; i < sections.length; i++) {
-    const hash = sha256(sections[i]);
-    const source = `custom/${appId}/${slug}#${i}`;
-    if (!chunkExists(db, source, hash)) {
-      toDelete.push(source);
-      toEmbed.push({ section: sections[i], hash, idx: i });
-    }
-  }
-
-  if (toEmbed.length === 0) {
+  if (!FORCE && isSourceCurrent(db, docSource, fileHash)) {
     console.log(`  skip (unchanged): ${slug}`);
     db.close();
     return;
   }
 
-  console.log(`  ingest: ${slug} app=${appId} (${toEmbed.length} new/changed chunks)`);
+  const [frontmatter, body] = parseFrontmatter(raw);
+  const prov = provenance(fs.statSync(filePath).mtimeMs, frontmatter);
+  const sections = splitByHeaders(body);
 
-  // Embed first — if this throws, DB is untouched
-  const embeddings = await embed(toEmbed.map((t) => t.section));
+  const changed = await embedAndStore(db, docSource, sections, (section, idx, hash) => ({
+    source: `${docSource}#${idx}`,
+    platform: 'custom',
+    app_id: appId,
+    content: section,
+    content_hash: hash,
+    metadata: { file: filePath, slug, chunk_i: idx, section: chunkSection(section), ...frontmatter, ...prov },
+  }));
 
-  db.transaction(() => {
-    for (const source of toDelete) deleteChunksBySource(db, source);
-    for (let j = 0; j < toEmbed.length; j++) {
-      const { section, hash, idx } = toEmbed[j];
-      const source = `custom/${appId}/${slug}#${idx}`;
-      const chunk: ChunkInput = {
-        source,
-        platform: 'custom',
-        app_id: appId,
-        content: section,
-        content_hash: hash,
-        metadata: { file: filePath, slug, chunk_i: idx },
-      };
-      insertChunk(db, chunk, embeddings[j]);
-    }
-  })();
+  console.log(
+    changed > 0
+      ? `  ingest: ${slug} app=${appId} (${changed} new/changed chunks)`
+      : `  unchanged content, refreshing provenance: ${slug}`,
+  );
+  recordSource(db, docSource, fileHash, prov);
 
   const total = (db.prepare('SELECT COUNT(*) as n FROM chunks').get() as { n: number }).n;
   console.log(`\nDone. Total chunks in DB: ${total}`);
+  const oldest = getOldestSource(db);
+  if (oldest) console.log(`Oldest source: ${oldest.source} (as_of ${oldest.as_of})`);
   db.close();
 }
 
@@ -183,8 +274,12 @@ async function main(): Promise<void> {
       platform: { type: 'string' },
       custom: { type: 'string' },
       'app-id': { type: 'string' },
+      force: { type: 'boolean' },
     },
   });
+
+  FORCE = values.force === true;
+  if (FORCE) console.log('[--force] re-embedding every source, ignoring content hashes');
 
   if (values.platform) {
     const p = values.platform as string;
@@ -201,7 +296,7 @@ async function main(): Promise<void> {
     }
     await ingestCustom(values.custom, appId);
   } else {
-    console.error('Usage: --platform ios|android  OR  --custom <path> --app-id <name>');
+    console.error('Usage: --platform ios|android  OR  --custom <path> --app-id <name>  [--force]');
     process.exit(1);
   }
 }
