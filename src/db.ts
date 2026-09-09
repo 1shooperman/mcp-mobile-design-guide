@@ -48,9 +48,61 @@ export function openDb(dbPath?: string): Database.Database {
     CREATE VIRTUAL TABLE IF NOT EXISTS vec_items USING vec0(
       embedding float[${EMBED_DIM}]
     );
+
+    CREATE TABLE IF NOT EXISTS sources (
+      source        TEXT PRIMARY KEY,
+      content_hash  TEXT NOT NULL,
+      as_of         TEXT,
+      as_of_source  TEXT,
+      commit_sha    TEXT,
+      ingested_at   TEXT NOT NULL
+    );
   `);
 
   return db;
+}
+
+export interface SourceProvenance {
+  as_of: string;
+  as_of_source: 'declared' | 'file-mtime';
+  ingested_at: string;
+  commit_sha?: string;
+}
+
+/**
+ * Whole-file skip check, separate from the per-chunk content_hash check in
+ * `chunks`: lets a full file be skipped without re-splitting or re-hashing
+ * every section when nothing in it changed.
+ */
+export function isSourceCurrent(db: Database.Database, source: string, contentHash: string): boolean {
+  const row = db
+    .prepare('SELECT content_hash FROM sources WHERE source = ?')
+    .get(source) as { content_hash: string } | undefined;
+  return row?.content_hash === contentHash;
+}
+
+export function recordSource(
+  db: Database.Database,
+  source: string,
+  contentHash: string,
+  prov: SourceProvenance,
+): void {
+  db.prepare(
+    `INSERT INTO sources (source, content_hash, as_of, as_of_source, commit_sha, ingested_at)
+     VALUES (?, ?, ?, ?, ?, ?)
+     ON CONFLICT(source) DO UPDATE SET
+       content_hash = excluded.content_hash,
+       as_of        = excluded.as_of,
+       as_of_source = excluded.as_of_source,
+       commit_sha   = excluded.commit_sha,
+       ingested_at  = excluded.ingested_at`,
+  ).run(source, contentHash, prov.as_of, prov.as_of_source, prov.commit_sha ?? null, prov.ingested_at);
+}
+
+export function getOldestSource(db: Database.Database): { source: string; as_of: string } | undefined {
+  return db
+    .prepare('SELECT source, as_of FROM sources WHERE as_of IS NOT NULL ORDER BY as_of LIMIT 1')
+    .get() as { source: string; as_of: string } | undefined;
 }
 
 export function serialize(v: number[]): Float32Array {

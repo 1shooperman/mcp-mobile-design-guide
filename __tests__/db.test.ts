@@ -1,5 +1,15 @@
 import crypto from 'node:crypto';
-import { chunkExists, deleteChunksBySource, getChunksBySource, insertChunk, listSources, openDb } from '../src/db';
+import {
+  chunkExists,
+  deleteChunksBySource,
+  getChunksBySource,
+  getOldestSource,
+  insertChunk,
+  isSourceCurrent,
+  listSources,
+  openDb,
+  recordSource,
+} from '../src/db';
 import { FIXTURE_CHUNKS } from './fixtures/chunks';
 
 function fakeEmbedding(dim = 1024): number[] {
@@ -65,6 +75,45 @@ describe('db helpers', () => {
 
     const customSources = listSources(db, 'custom', 'my-app');
     expect(customSources).toContain('custom/my-app/brand#0');
+
+    db.close();
+  });
+
+  test('isSourceCurrent and recordSource track whole-file provenance', () => {
+    const db = openDb(MEM);
+    const source = 'ios/buttons';
+
+    expect(isSourceCurrent(db, source, 'hash-1')).toBe(false);
+
+    recordSource(db, source, 'hash-1', {
+      as_of: '2026-01-01',
+      as_of_source: 'file-mtime',
+      ingested_at: '2026-01-01T00:00:00Z',
+    });
+    expect(isSourceCurrent(db, source, 'hash-1')).toBe(true);
+    expect(isSourceCurrent(db, source, 'hash-2')).toBe(false);
+
+    // edited file re-recorded with a new hash replaces, not duplicates, the row
+    recordSource(db, source, 'hash-2', {
+      as_of: '2026-02-01',
+      as_of_source: 'declared',
+      ingested_at: '2026-02-01T00:00:00Z',
+      commit_sha: 'abc123',
+    });
+    expect(isSourceCurrent(db, source, 'hash-1')).toBe(false);
+    expect(isSourceCurrent(db, source, 'hash-2')).toBe(true);
+
+    db.close();
+  });
+
+  test('getOldestSource returns the earliest as_of', () => {
+    const db = openDb(MEM);
+    recordSource(db, 'ios/newer', 'h1', { as_of: '2026-06-01', as_of_source: 'file-mtime', ingested_at: 'x' });
+    recordSource(db, 'ios/older', 'h2', { as_of: '2025-01-15', as_of_source: 'file-mtime', ingested_at: 'x' });
+
+    const oldest = getOldestSource(db);
+    expect(oldest?.source).toBe('ios/older');
+    expect(oldest?.as_of).toBe('2025-01-15');
 
     db.close();
   });

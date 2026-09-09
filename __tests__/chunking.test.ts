@@ -31,6 +31,61 @@ function splitByHeaders(markdown: string): string[] {
   return out;
 }
 
+function chunkSection(chunk: string): string | undefined {
+  const firstLine = chunk.split('\n')[0].trim();
+  return firstLine.startsWith('## ') ? firstLine.slice(3).trim() : undefined;
+}
+
+function parseFrontmatter(text: string): [Record<string, string | string[]>, string] {
+  if (!text.startsWith('---\n')) return [{}, text];
+  const end = text.indexOf('\n---', 4);
+  if (end === -1) return [{}, text];
+
+  const raw = text.slice(4, end);
+  const body = text.slice(end + 4).replace(/^\n+/, '');
+  const meta: Record<string, string | string[]> = {};
+  for (const line of raw.split('\n')) {
+    const sepIdx = line.indexOf(':');
+    if (sepIdx === -1) continue;
+    const key = line.slice(0, sepIdx).trim();
+    const val = line.slice(sepIdx + 1).trim();
+    meta[key] = key === 'tags' ? val.split(',').map((t) => t.trim()).filter(Boolean) : val;
+  }
+  return [meta, body];
+}
+
+describe('chunkSection', () => {
+  test('extracts the heading a chunk starts with', () => {
+    expect(chunkSection('## Buttons\nContent here.')).toBe('Buttons');
+  });
+
+  test('returns undefined when chunk has no leading header', () => {
+    expect(chunkSection('Just prose, no header.')).toBeUndefined();
+  });
+});
+
+describe('parseFrontmatter', () => {
+  test('parses declared as_of and comma-separated tags', () => {
+    const text = '---\nas_of: 2026-03-01\ntags: nav, buttons\n---\n## Body\ncontent';
+    const [meta, body] = parseFrontmatter(text);
+    expect(meta.as_of).toBe('2026-03-01');
+    expect(meta.tags).toEqual(['nav', 'buttons']);
+    expect(body.startsWith('## Body')).toBe(true);
+  });
+
+  test('returns empty metadata when no frontmatter block is present', () => {
+    const [meta, body] = parseFrontmatter('## Body\ncontent');
+    expect(meta).toEqual({});
+    expect(body).toBe('## Body\ncontent');
+  });
+
+  test('returns empty metadata when the closing --- is missing', () => {
+    const [meta, body] = parseFrontmatter('---\nas_of: 2026-03-01\n## Body');
+    expect(meta).toEqual({});
+    expect(body).toBe('---\nas_of: 2026-03-01\n## Body');
+  });
+});
+
 describe('chunking', () => {
   test('splitByHeaders splits on ## boundaries', () => {
     const md = [
