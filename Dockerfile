@@ -7,6 +7,11 @@ ENV MCP_TRANSPORT=http \
 
 WORKDIR /app
 
+# python3/make/g++ back node-gyp if no prebuilt binary exists for this
+# image's node/glibc/arch combo for better-sqlite3 or sqlite-vec
+RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY package.json package-lock.json tsconfig.json ./
 RUN npm ci
 
