@@ -1,0 +1,9 @@
+{
+  "threshold": 0,
+  "reporters": ["console"],
+  "ignore": [
+    "__tests__/chunking.test.ts"
+  ],
+  "absolute": false,
+  "gitignore": true
+}

@@ -178,6 +178,13 @@ const PLATFORM_DIRS: Record<string, string> = {
   'google-search': 'google-search',
 };
 
+function logDbSummary(db: ReturnType<typeof openDb>): void {
+  const total = (db.prepare('SELECT COUNT(*) as n FROM chunks').get() as { n: number }).n;
+  console.log(`\nDone. Total chunks in DB: ${total}`);
+  const oldest = getOldestSource(db);
+  if (oldest) console.log(`Oldest source: ${oldest.source} (as_of ${oldest.as_of})`);
+}
+
 async function ingestPlatform(platform: string): Promise<void> {
   const dir = path.join(config.cacheDir, PLATFORM_DIRS[platform], 'hig');
   const indexPath = path.join(dir, 'index.json');
@@ -223,10 +230,7 @@ async function ingestPlatform(platform: string): Promise<void> {
     recordSource(db, docSource, fileHash, prov);
   }
 
-  const total = (db.prepare('SELECT COUNT(*) as n FROM chunks').get() as { n: number }).n;
-  console.log(`\nDone. Total chunks in DB: ${total}`);
-  const oldest = getOldestSource(db);
-  if (oldest) console.log(`Oldest source: ${oldest.source} (as_of ${oldest.as_of})`);
+  logDbSummary(db);
   db.close();
 }
 
@@ -268,10 +272,7 @@ async function ingestCustom(filePath: string, appId: string): Promise<void> {
   );
   recordSource(db, docSource, fileHash, prov);
 
-  const total = (db.prepare('SELECT COUNT(*) as n FROM chunks').get() as { n: number }).n;
-  console.log(`\nDone. Total chunks in DB: ${total}`);
-  const oldest = getOldestSource(db);
-  if (oldest) console.log(`Oldest source: ${oldest.source} (as_of ${oldest.as_of})`);
+  logDbSummary(db);
   db.close();
 }
 

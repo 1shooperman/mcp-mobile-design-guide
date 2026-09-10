@@ -63,7 +63,6 @@ def trim_chrome(markdown: str) -> str:
 
 
 async def crawl():
-    OUT_DIR.mkdir(parents=True, exist_ok=True)
     index: dict[str, str] = {}
 
     async with AsyncWebCrawler(config=BROWSER_CFG) as crawler:
@@ -95,4 +94,5 @@ async def crawl():
 
 
 if __name__ == "__main__":
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
     asyncio.run(crawl())

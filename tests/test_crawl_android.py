@@ -1,8 +1,9 @@
-import sys
 import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'scripts'))
+import sys
 
-from crawl_android import url_to_slug, is_target_url
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts"))
+
+from crawl_android import is_target_url, url_to_slug
 
 
 def test_url_to_slug_basic():

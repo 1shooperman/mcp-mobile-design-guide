@@ -1,2 +1,5 @@
 pytest==9.0.3
-pylint==4.0.5
+ruff==0.16.6
+bandit==1.9.4
+pyright==1.1.414
+njsscan==1.0.0

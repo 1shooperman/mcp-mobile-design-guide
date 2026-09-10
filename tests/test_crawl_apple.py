@@ -1,8 +1,9 @@
-import sys
 import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'scripts'))
+import sys
 
-from crawl_apple import url_to_slug, is_hig_url
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts"))
+
+from crawl_apple import is_hig_url, url_to_slug
 
 
 def test_url_to_slug_basic():
