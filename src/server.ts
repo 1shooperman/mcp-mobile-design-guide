@@ -65,4 +65,16 @@ mcp.addTool({
   },
 });
 
-mcp.start({ transportType: 'stdio' });
+// MCP_TRANSPORT=http -> long-lived streamable-HTTP server (containerized).
+// Anything else -> stdio, for running directly off the host via run-mcp.sh.
+if (process.env.MCP_TRANSPORT === 'http') {
+  mcp.start({
+    transportType: 'httpStream',
+    httpStream: {
+      host: process.env.MCP_HOST ?? '0.0.0.0',
+      port: Number(process.env.MCP_PORT ?? '8000'),
+    },
+  });
+} else {
+  mcp.start({ transportType: 'stdio' });
+}
