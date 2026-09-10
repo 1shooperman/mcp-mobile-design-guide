@@ -1,0 +1,15 @@
+name: mcp
+
+services:
+  mobile-design-guide:
+    build: .
+    image: mobile-design-guide:latest
+    container_name: mobile-design-guide
+    # no restart policy: container stays stopped until you start it explicitly
+    restart: "no"
+    env_file: .env
+    ports:
+      # loopback only - this server has no auth
+      - "127.0.0.1:8767:8000"
+    volumes:
+      - ./data:/app/data
