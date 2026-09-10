@@ -3,7 +3,6 @@
 import asyncio
 import json
 import re
-import time
 from pathlib import Path
 from urllib.parse import urljoin, urlparse
 
@@ -38,7 +37,6 @@ def is_hig_url(url: str) -> bool:
 
 
 async def crawl():
-    OUT_DIR.mkdir(parents=True, exist_ok=True)
     visited: set[str] = set()
     queue: list[str] = [ROOT_URL]
     index: dict[str, str] = {}  # slug -> url
@@ -75,11 +73,12 @@ async def crawl():
                 if is_hig_url(full) and full not in visited:
                     queue.append(full)
 
-            time.sleep(0.5)
+            await asyncio.sleep(0.5)
 
     INDEX_FILE.write_text(json.dumps(index, indent=2), encoding="utf-8")
     print(f"\nDone. {len(index)} pages -> {OUT_DIR}")
 
 
 if __name__ == "__main__":
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
     asyncio.run(crawl())

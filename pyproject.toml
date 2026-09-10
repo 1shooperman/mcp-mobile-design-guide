@@ -1,8 +1,22 @@
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 
-[tool.pylint.main]
-ignore-paths = [".venv", "node_modules"]
+[tool.ruff]
+line-length = 110
+target-version = "py313"
+extend-exclude = [".venv", "node_modules"]
 
-[tool.pylint.messages_control]
-disable = ["missing-module-docstring", "missing-function-docstring", "broad-exception-caught", "duplicate-code", "import-error"]
+[tool.ruff.lint]
+# BLE (flake8-blind-except) deliberately excluded: crawlers catch broad
+# Exception per-page so one bad page doesn't kill the whole run
+select = ["E", "F", "I", "UP", "B", "ASYNC", "SIM"]
+
+[tool.bandit]
+exclude_dirs = [".venv", "node_modules", "tests"]
+
+[tool.pyright]
+include = ["scripts", "tests"]
+exclude = [".venv", "node_modules"]
+extraPaths = ["scripts"]
+typeCheckingMode = "basic"
+pythonVersion = "3.13"

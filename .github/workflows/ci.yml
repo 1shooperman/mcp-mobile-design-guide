@@ -17,6 +17,8 @@ jobs:
       - run: npm ci
       - run: npm run validate
       - run: npm run lint
+      - run: npm run lint:security
+      - run: npm run duplication
       - run: npm test
 
   python:
@@ -33,5 +35,10 @@ jobs:
             requirements-dev.txt
       - run: sudo apt-get install -y libxml2-dev libxslt-dev
       - run: pip install -r requirements.txt -r requirements-dev.txt
-      - run: pylint scripts/crawl_android.py scripts/crawl_apple.py
+      - run: pip check
+      - run: ruff check scripts tests
+      - run: ruff format --check scripts tests
+      - run: bandit -c pyproject.toml -r scripts
+      - run: pyright
+      - run: njsscan src __tests__
       - run: pytest
