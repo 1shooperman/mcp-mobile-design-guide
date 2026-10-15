@@ -25,3 +25,7 @@ change-summary.md
 
 wiki/**
 !.gitkeep
+
+SPEC.md
+
+ralph-loop.local.md

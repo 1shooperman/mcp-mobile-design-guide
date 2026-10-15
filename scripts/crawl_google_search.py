@@ -31,7 +31,61 @@ SOURCES = [
         "as_of": "2026-03-31",
         "tags": ["crawling", "googlebot", "technical-seo", "infrastructure"],
     },
+    {
+        "url": "https://developers.google.com/search/docs/appearance/structured-data/article",
+        "as_of": "2026-10-15",
+        "tags": ["seo", "structured-data", "enhancement", "article"],
+    },
+    {
+        "url": "https://developers.google.com/search/docs/appearance/structured-data/breadcrumb",
+        "as_of": "2026-10-15",
+        "tags": ["seo", "structured-data", "enhancement", "breadcrumb"],
+    },
+    {
+        "url": "https://developers.google.com/search/docs/appearance/structured-data/local-business",
+        "as_of": "2026-10-15",
+        "tags": ["seo", "structured-data", "enhancement", "local-business"],
+    },
+    # Logo's own slug (/structured-data/logo) now redirects here — logo markup
+    # is documented as part of Organization structured data.
+    {
+        "url": "https://developers.google.com/search/docs/appearance/structured-data/organization",
+        "as_of": "2026-10-15",
+        "tags": ["seo", "structured-data", "enhancement", "logo"],
+    },
+    {
+        "url": "https://developers.google.com/search/docs/appearance/structured-data/product",
+        "as_of": "2026-10-15",
+        "tags": ["seo", "structured-data", "enhancement", "product"],
+    },
+    {
+        "url": "https://developers.google.com/search/docs/appearance/structured-data/qapage",
+        "as_of": "2026-10-15",
+        "tags": ["seo", "structured-data", "enhancement", "qa"],
+    },
+    {
+        "url": "https://developers.google.com/search/docs/appearance/structured-data/review-snippet",
+        "as_of": "2026-10-15",
+        "tags": ["seo", "structured-data", "enhancement", "review"],
+    },
+    {
+        "url": "https://developers.google.com/search/docs/appearance/structured-data/sd-policies",
+        "as_of": "2026-10-15",
+        "tags": ["seo", "structured-data", "policy"],
+    },
+    # /appearance/search-result-features now redirects here.
+    {
+        "url": "https://developers.google.com/search/docs/appearance/visual-elements-gallery",
+        "as_of": "2026-10-15",
+        "tags": ["seo", "structured-data", "overview"],
+    },
 ]
+
+# Dropped from the original proposal (SPEC.md Change 1): FAQ (faqpage), How-To
+# (how-to), and Sitelinks search box (sitelinks-searchbox) all 301 to
+# /search/updates deprecation announcements, not doc content — Google removed
+# these rich results. Caching the redirect target would mean ingesting an
+# unrelated changelog page under a misleading tag/slug.
 
 BROWSER_CFG = BrowserConfig(headless=True, verbose=False)
 RUN_CFG = CrawlerRunConfig(
