@@ -31,6 +31,54 @@ SOURCES = [
         "as_of": "2026-03-31",
         "tags": ["crawling", "googlebot", "technical-seo", "infrastructure"],
     },
+    {
+        "url": "https://developers.google.com/search/docs/appearance/structured-data/article",
+        "as_of": "2026-09-08",
+        "tags": ["seo", "structured-data", "enhancement", "article"],
+    },
+    {
+        "url": "https://developers.google.com/search/docs/appearance/structured-data/breadcrumb",
+        "as_of": "2026-09-08",
+        "tags": ["seo", "structured-data", "enhancement", "breadcrumb"],
+    },
+    {
+        "url": "https://developers.google.com/search/docs/appearance/structured-data/local-business",
+        "as_of": "2026-09-08",
+        "tags": ["seo", "structured-data", "enhancement", "local-business"],
+    },
+    # Logo's own slug (/structured-data/logo) now redirects here — logo markup
+    # is documented as part of Organization structured data.
+    {
+        "url": "https://developers.google.com/search/docs/appearance/structured-data/organization",
+        "as_of": "2026-09-08",
+        "tags": ["seo", "structured-data", "enhancement", "logo"],
+    },
+    {
+        "url": "https://developers.google.com/search/docs/appearance/structured-data/product",
+        "as_of": "2025-12-10",
+        "tags": ["seo", "structured-data", "enhancement", "product"],
+    },
+    {
+        "url": "https://developers.google.com/search/docs/appearance/structured-data/qapage",
+        "as_of": "2026-09-08",
+        "tags": ["seo", "structured-data", "enhancement", "qa"],
+    },
+    {
+        "url": "https://developers.google.com/search/docs/appearance/structured-data/review-snippet",
+        "as_of": "2026-09-08",
+        "tags": ["seo", "structured-data", "enhancement", "review"],
+    },
+    {
+        "url": "https://developers.google.com/search/docs/appearance/structured-data/sd-policies",
+        "as_of": "2026-07-10",
+        "tags": ["seo", "structured-data", "policy"],
+    },
+    # /appearance/search-result-features now redirects here.
+    {
+        "url": "https://developers.google.com/search/docs/appearance/visual-elements-gallery",
+        "as_of": "2026-02-04",
+        "tags": ["seo", "structured-data", "overview"],
+    },
 ]
 
 BROWSER_CFG = BrowserConfig(headless=True, verbose=False)
