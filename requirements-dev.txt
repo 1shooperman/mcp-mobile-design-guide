@@ -1,5 +1,5 @@
-pytest==9.0.3
-ruff==0.16.6
+pytest==9.1.1
+ruff==0.17.0
 bandit==1.9.4
 pyright==1.1.414
-njsscan==1.0.0
+njsscan==1.0.1
