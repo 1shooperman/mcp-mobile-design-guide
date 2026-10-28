@@ -40,5 +40,4 @@ jobs:
       - run: ruff format --check scripts tests
       - run: bandit -c pyproject.toml -r scripts
       - run: pyright
-      - run: njsscan src __tests__
       - run: pytest

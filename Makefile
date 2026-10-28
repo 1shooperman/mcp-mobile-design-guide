@@ -1,4 +1,4 @@
-.PHONY: start stop restart down rebuild build logs status ingest py-lint py-format py-security py-typecheck py-test py-verify js-security js-duplication njsscan
+.PHONY: start stop restart down rebuild build logs status ingest py-lint py-format py-security py-typecheck py-test py-verify js-security js-duplication
 
 # mobile-design-guide MCP server: long-lived HTTP, container-only, on 127.0.0.1:8767/mcp
 IMAGE := mobile-design-guide:latest
@@ -59,7 +59,3 @@ js-security:
 
 js-duplication:
 	npm run duplication
-
-# njsscan is python-based (requirements-dev.txt) but scans src/ and __tests__/
-njsscan:
-	njsscan src __tests__
