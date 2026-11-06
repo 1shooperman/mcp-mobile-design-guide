@@ -43,7 +43,7 @@
   "dependencies": {
     "better-sqlite3": "^13.0.3",
     "dotenv": "^18.0.9",
-    "fastmcp": "^4.0.1",
+    "fastmcp": "^4.24.1",
     "sqlite-vec": "^0.1.9",
     "voyageai": "^0.4.0"
   },
